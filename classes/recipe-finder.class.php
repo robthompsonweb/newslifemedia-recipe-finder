@@ -26,31 +26,57 @@ class RecipeFinder {
         foreach($this->recipes as $recipeIndex=>$recipe) {
             $ingredientsInThisRecipeMatched = 0;
             
+            //Keep track of the nearest use-by date in case we need it again
+            $closestUseByDate = FALSE;
+
             foreach($recipe->ingredients as $ingredient) {
                 if(isset($this->fridgeList[strtolower($ingredient->item)])) {
                     $fridgeItem = $this->fridgeList[strtolower($ingredient->item)];
                     
+                    
                     //Check we have the same units and enough in the fridge
                     if($ingredient->unit == $fridgeItem['unit'] AND $ingredient->amount <= $fridgeItem['amount']) {
-                       $ingredientsInThisRecipeMatched++;
+                        $ingredientsInThisRecipeMatched++;
+                        
+                        if($closestUseByDate === FALSE OR $fridgeItem['use-by'] < $closestUseByDate) {
+                            $closestUseByDate = $fridgeItem['use-by'];
+                        }
                     }
                 }
             }
             
             //Do we have all the ingredits for the recipe?
             if($ingredientsInThisRecipeMatched == count($recipe->ingredients)) {
-                $matchingRecipeIndexes[] = $recipeIndex;
+                $matchingRecipeIndexes[] = array('recipe-index' => $recipeIndex, 'closest-use-by' => $closestUseByDate);
             }
         }
         
-        print_r($matchingRecipeIndexes);
+        if(count($matchingRecipeIndexes) == 0) {
+            return 'Order Takeout';
+        }
+        else {
+            //Sort recipes by closest use-by date if more than one
+            usort($matchingRecipeIndexes, 'self::_sortByUseByDate');
+            return ucwords($this->recipes[$matchingRecipeIndexes[0]['recipe-index']]->name);
+        }
     }
     
     public function getError() {
         return $this->errorStr;
     }
     
+    private function _sortByUseByDate($a, $b) {
+        if($a['closest-use-by'] == $b['closest-use-by']) {
+            return 0;
+        }
+        
+        return ($a['closest-use-by'] < $b['closest-use-by']) ? -1 : 1;
+    }
+    
     private function _parseFridgeList($fridgeListCsvFile) {
+        //Fix any mac issues with line endings
+        ini_set("auto_detect_line_endings", true);
+        
         $fridgeListHandle = @fopen($fridgeListCsvFile, 'r');
         if($fridgeListHandle === FALSE) {
             $this->errorStr = 'Unable to open fridge-list';
