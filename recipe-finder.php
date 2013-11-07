@@ -1,4 +1,9 @@
 <?php
+/*
+    Recipe Finder run script
+    
+    Usage: recipe-finder.php fridge-list recipe-list
+*/
 include(dirname(__FILE__).'/classes/recipe-finder.class.php');
 
 //Check we have the correct inputs

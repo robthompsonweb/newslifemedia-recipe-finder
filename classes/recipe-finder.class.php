@@ -1,4 +1,12 @@
 <?php
+/*
+    Recipe Finder Class
+    Given a list of items in the fridge (presented as a csv list), and a collection of recipes (a collection of JSON formatted recipes), produce a
+    recommendation for what to cook tonight.
+    
+    @author Rob Thompson
+    @version 1.0
+*/
 class RecipeFinder {
     
     //List of ingredients in the fridge
@@ -13,6 +21,13 @@ class RecipeFinder {
     function __construct() {
     }
     
+    /*
+        Finds the best matching recipe you have the ingredients for
+        
+        @param $fridgeListCsvFile (string)
+        @parm $recipesJsonFile (string)
+        @return mixed
+    */
     public function findRecipe($fridgeListCsvFile, $recipesJsonFile) {
         if(!$this->_parseFridgeList($fridgeListCsvFile)) {
             return FALSE;
@@ -33,7 +48,6 @@ class RecipeFinder {
                 if(isset($this->fridgeList[strtolower($ingredient->item)])) {
                     $fridgeItem = $this->fridgeList[strtolower($ingredient->item)];
                     
-                    
                     //Check we have the same units and enough in the fridge
                     if($ingredient->unit == $fridgeItem['unit'] AND $ingredient->amount <= $fridgeItem['amount']) {
                         $ingredientsInThisRecipeMatched++;
@@ -51,6 +65,8 @@ class RecipeFinder {
             }
         }
         
+        
+        
         if(count($matchingRecipeIndexes) == 0) {
             return 'Order Takeout';
         }
@@ -61,10 +77,16 @@ class RecipeFinder {
         }
     }
     
+    /*
+        Returns any error message
+    
+        @return string
+    */
     public function getError() {
         return $this->errorStr;
     }
     
+    //Custom sort method to sort by nearest use by date
     private function _sortByUseByDate($a, $b) {
         if($a['closest-use-by'] == $b['closest-use-by']) {
             return 0;
@@ -73,6 +95,12 @@ class RecipeFinder {
         return ($a['closest-use-by'] < $b['closest-use-by']) ? -1 : 1;
     }
     
+    /*
+        Reads and parses the fridge ingredients list
+        
+        @param $fridgeListCsvFile string
+        @return boolean
+    */ 
     private function _parseFridgeList($fridgeListCsvFile) {
         //Fix any mac issues with line endings
         ini_set("auto_detect_line_endings", true);
@@ -114,6 +142,12 @@ class RecipeFinder {
         return TRUE;
     }
     
+    /*
+        Reads and parses the recipe json file
+        
+        @param $recipesJsonFile string
+        @return boolean
+    */ 
     private function _parseRecipes($recipesJsonFile) {
         $recipeListStr = @file_get_contents($recipesJsonFile);
         if($recipeListStr === FALSE) {
