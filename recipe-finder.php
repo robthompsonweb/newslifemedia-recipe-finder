@@ -7,8 +7,8 @@ if(count($argv) != 3) {
     exit;
 }
 
-$recipeFinder = new RecipeFinder($argv[1], $argv[2]);
-$recipe = $recipeFinder->findRecipe();
+$recipeFinder = new RecipeFinder();
+$recipe = $recipeFinder->findRecipe($argv[1], $argv[2]);
 
 if($recipe !== FALSE) {
     echo $recipe;

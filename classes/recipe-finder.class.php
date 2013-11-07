@@ -2,23 +2,56 @@
 class RecipeFinder {
     
     //List of ingredients in the fridge
-    private $fridgeListCsv = null;
     private $fridgeList = array();
     
     //List of recipes
-    private $recipesJson = null;
     private $recipes = array();
     
     //Holds any error message
     private $errorStr = '';
     
-    function __construct($fridgeList, $recipes) {
-        $this->fridgeListCsv = $fridgeList;
-        $this->recipesJson = $recipes;
+    function __construct() {
     }
     
-    private function _parseFridgeList() {
-        $fridgeListHandle = @fopen($this->fridgeListCsv, 'r');
+    public function findRecipe($fridgeListCsvFile, $recipesJsonFile) {
+        if(!$this->_parseFridgeList($fridgeListCsvFile)) {
+            return FALSE;
+        }
+        if(!$this->_parseRecipes($recipesJsonFile)) {
+            return FALSE;
+        }
+        
+        //For each recipe check if we have all the ingredients in the fridge
+        $matchingRecipeIndexes = array();
+        foreach($this->recipes as $recipeIndex=>$recipe) {
+            $ingredientsInThisRecipeMatched = 0;
+            
+            foreach($recipe->ingredients as $ingredient) {
+                if(isset($this->fridgeList[strtolower($ingredient->item)])) {
+                    $fridgeItem = $this->fridgeList[strtolower($ingredient->item)];
+                    
+                    //Check we have the same units and enough in the fridge
+                    if($ingredient->unit == $fridgeItem['unit'] AND $ingredient->amount <= $fridgeItem['amount']) {
+                       $ingredientsInThisRecipeMatched++;
+                    }
+                }
+            }
+            
+            //Do we have all the ingredits for the recipe?
+            if($ingredientsInThisRecipeMatched == count($recipe->ingredients)) {
+                $matchingRecipeIndexes[] = $recipeIndex;
+            }
+        }
+        
+        print_r($matchingRecipeIndexes);
+    }
+    
+    public function getError() {
+        return $this->errorStr;
+    }
+    
+    private function _parseFridgeList($fridgeListCsvFile) {
+        $fridgeListHandle = @fopen($fridgeListCsvFile, 'r');
         if($fridgeListHandle === FALSE) {
             $this->errorStr = 'Unable to open fridge-list';
             return FALSE;
@@ -55,8 +88,8 @@ class RecipeFinder {
         return TRUE;
     }
     
-    private function _parseRecipes() {
-        $recipeListStr = @file_get_contents($this->recipesJson);
+    private function _parseRecipes($recipesJsonFile) {
+        $recipeListStr = @file_get_contents($recipesJsonFile);
         if($recipeListStr === FALSE) {
             $this->errorStr = "Unable to open recipe-list";
             return FALSE;
@@ -70,43 +103,6 @@ class RecipeFinder {
         }
         
         return TRUE;
-    }
-    
-    public function findRecipe() {
-        if(!$this->_parseFridgeList()) {
-            return FALSE;
-        }
-        if(!$this->_parseRecipes()) {
-            return FALSE;
-        }
-        
-        //For each recipe check if we have all the ingredients in the fridge
-        $matchingRecipeIndexes = array();
-        foreach($this->recipes as $recipeIndex=>$recipe) {
-            $ingredientsInThisRecipeMatched = 0;
-            
-            foreach($recipe->ingredients as $ingredient) {
-                if(isset($this->fridgeList[strtolower($ingredient->item)])) {
-                    $fridgeItem = $this->fridgeList[strtolower($ingredient->item)];
-                    
-                    //Check we have the same units and enough in the fridge
-                    if($ingredient->unit == $fridgeItem['unit'] AND $ingredient->amount <= $fridgeItem['amount']) {
-                       $ingredientsInThisRecipeMatched++;
-                    }
-                }
-            }
-            
-            //Do we have all the ingredits for the recipe?
-            if($ingredientsInThisRecipeMatched == count($recipe->ingredients)) {
-                $matchingRecipeIndexes[] = $recipeIndex;
-            }
-        }
-        
-        print_r($matchingRecipeIndexes);
-    }
-    
-    public function getError() {
-        return $this->errorStr;
     }
     
 }
