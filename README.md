@@ -2,6 +2,7 @@ Given a list of items in the fridge (presented as a csv list), and a collection 
 recommendation for what to cook tonight.
 
 ##Usage
+Run as a CLI script
 ````
     recipe-finder.php fridge-list recipe-list
 ````
